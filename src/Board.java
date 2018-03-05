@@ -15,7 +15,22 @@ public class Board{
 				board[i][j] = -1;
 			}
 		}
+	}
 
+	/**
+	 * Copy constructor
+	 * @param origin
+	 */
+	private Board(Board origin) {
+		this.dim=origin.dim;
+		this.toWin=origin.toWin;
+		// make a deep copy of the board
+		int[][] newBoard = new int[origin.board.length][origin.board[0].length];
+		for (int i = 0; i < newBoard.length; i++) {
+			for (int j = 0; j < newBoard[0].length; j++) {
+				newBoard[i][j] = origin.board[i][j];
+			}
+		}
 	}
 
 	public boolean move(int player, int row, int col) {
@@ -37,8 +52,8 @@ public class Board{
 	 * Used for the AI player, the arguments are the player's last move and
 	 * the opponent's last move
  	 */
-	public ArrayList getAvailableSpots(int row1, int col1, int row2, int col2) {
-		ArrayList<ArrayList<Integer>> available = new ArrayList<>();
+	public ArrayList<ArrayList> getAvailableSpots(int row1, int col1, int row2, int col2) {
+		ArrayList<ArrayList> available = new ArrayList<>();
 		int row1Start = (row1 >= 2) ? row1 - 2 : 0;
 		int row1End = (row1 + 2 < dim) ? row1 + 2 : dim;
 		int col1Start = (col1 >= 2) ? col1 - 2 : 0;
@@ -54,10 +69,10 @@ public class Board{
 			}
 		}
 
-		int row2Start = (row2 >= 2) ? row2 - 2 : 0;
-		int row2End = (row2 + 2 < dim) ? row2 + 2 : dim;
-		int col2Start = (col2 >= 2) ? col2 - 2 : 0;
-		int col2End = (col2 + 2 < dim) ? col2 + 2 : dim;
+		int row2Start = (row2 >= 1) ? row2 - 1 : 0;
+		int row2End = (row2 + 1 < dim) ? row2 + 1 : dim;
+		int col2Start = (col2 >= 1) ? col2 - 1 : 0;
+		int col2End = (col2 + 1 < dim) ? col2 + 1 : dim;
 		for (int i = row2Start; i <= row2End; i++) {
 			for (int j = col2Start; j <= col2End; j++) {
 				if (board[i][j] == -1) {
@@ -73,8 +88,12 @@ public class Board{
 	}
 
 	public void printBoard() {
-		System.out.println("======================");
-		System.out.println("   0  1  2  3  4  5 ");
+		System.out.println("============================");
+		System.out.print("   ");
+		for (int i = 0; i < dim; i++) {
+			System.out.print(i + "  ");
+		}
+		System.out.println();
 		for (int i = 0; i < dim; i++) {
 			System.out.print(i + " ");
 			for (int j = 0; j < dim; j++) {
@@ -89,7 +108,55 @@ public class Board{
 			System.out.println();
 		}
 		System.out.println();
-		System.out.println("======================");
+		System.out.println("============================");
+	}
+
+
+	public int[] AIGetMove(int[] lastAIMove, int[] lastHumanMove) {
+		ArrayList<ArrayList> worklist = this.getAvailableSpots(lastAIMove[0], lastAIMove[1],
+						lastHumanMove[0], lastHumanMove[1]);
+
+		int bestMoveIndex = 0;
+
+		for (int possibleMove = 0; possibleMove < worklist.size(); possibleMove++) {
+			int[] newMove = new int[]{(Integer)worklist.get(possibleMove).get(0),
+							(Integer)worklist.get(possibleMove).get(1)};
+			int winTime = 0;
+			for (int i = 0; i <= 50; i++) {
+				winTime += tryMove(this, lastAIMove, lastHumanMove, newMove, 1);
+			}
+			worklist.get(possibleMove).add(winTime);
+
+			// update the best move
+			if ((Integer)worklist.get(possibleMove).get(2) > (Integer)worklist.get(bestMoveIndex).get(2)) {
+				bestMoveIndex = possibleMove;
+			}
+		}
+
+		int[] newMove = new int[]{(Integer)worklist.get(bestMoveIndex).get(0),
+						(Integer)worklist.get(bestMoveIndex).get(1)};
+		return newMove;
+	}
+
+	// see the result of a move without actually making a move on the actual board
+	private int tryMove(Board origin, int[] secondToLastMove, int[] lastMove,
+											int[] thisMove, int player) {
+		Board newBoard = new Board(origin);
+		newBoard.move(player, thisMove[0], thisMove[1]);
+
+		if (newBoard.checkWin() == 0) {
+			return -1;
+		} else if (newBoard.checkWin() == 1) {
+			return 1;
+		} else {
+			ArrayList<ArrayList> worklist = newBoard.getAvailableSpots
+							(secondToLastMove[0], secondToLastMove[1], lastMove[0], lastMove[1]);
+			Random random = new Random();
+			int choice = random.nextInt(worklist.size());
+			int[] newMove = new int[] {(Integer)worklist.get(choice).get(0),
+							(Integer)worklist.get(choice).get(1)};
+			return tryMove(newBoard, lastMove, thisMove, newMove, 1 - player);
+		}
 	}
 
 	public int checkWin() {
@@ -98,7 +165,7 @@ public class Board{
 		} else if (checkVertical() != -1) {
 			return checkVertical();
 		} else {
-			return checkVertical();
+			return checkDiagonal();
 		}
 	}
 
