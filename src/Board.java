@@ -1,11 +1,14 @@
+import java.util.*;
 public class Board{
 	private int dim;
 	private int toWin;
-	private int[][] board;
+	public int[][] board;
 
 	public Board(int dimension, int toWin){
 
-		board = new int[dim][];
+		this.dim=dimension;
+		this.toWin=toWin;
+		board = new int[dim][dim];
 
 		for (int i = 0; i < dim; i++) {
 			for (int j = 0; j < dim; j++) {
@@ -13,46 +16,120 @@ public class Board{
 			}
 		}
 
-		this.dim=dim;
-		this.toWin=toWin;
 	}
 
-	public int checkWin(Board checkBoard) {
-		if (checkHorizontal(checkBoard) != -1) {
-			return checkHorizontal(checkBoard);
-		} else if (checkVertical(checkBoard) != -1) {
-			return checkVertical(checkBoard);
-		} else if (checkDiagonal(checkBoard) != -1) {
-			return checkVertical(checkBoard);
+	public boolean move(int player, int row, int col) {
+		if (row > dim || col > dim) {
+			System.err.println("Coords not valid, give a new coords");
+			return false;
 		}
-		return -1;
+
+		if (board[row][col] != -1) {
+			System.err.println("Coords is not an empty spot");
+			return false;
+		}
+
+		board[row][col] = player;
+		return true;
 	}
 
-	public int checkHorizontal(Board checkBoard) {
+	/**
+	 * Used for the AI player, the arguments are the player's last move and
+	 * the opponent's last move
+ 	 */
+	public ArrayList getAvailableSpots(int row1, int col1, int row2, int col2) {
+		ArrayList<ArrayList<Integer>> available = new ArrayList<>();
+		int row1Start = (row1 >= 2) ? row1 - 2 : 0;
+		int row1End = (row1 + 2 < dim) ? row1 + 2 : dim;
+		int col1Start = (col1 >= 2) ? col1 - 2 : 0;
+		int col1End = (col1 + 2 < dim) ? col1 + 2 : dim;
+		for (int i = row1Start; i <= row1End; i++) {
+			for (int j = col1Start; j <= col1End; j++) {
+				if (board[i][j] == -1) {
+					ArrayList<Integer> coords = new ArrayList<>();
+					coords.add(i);
+					coords.add(j);
+					available.add(coords);
+				}
+			}
+		}
 
-		for (int i = 0; i < checkBoard.dim; i++) {
-			for (int j = 0; j <= checkBoard.dim - checkBoard.toWin; j++) {
+		int row2Start = (row2 >= 2) ? row2 - 2 : 0;
+		int row2End = (row2 + 2 < dim) ? row2 + 2 : dim;
+		int col2Start = (col2 >= 2) ? col2 - 2 : 0;
+		int col2End = (col2 + 2 < dim) ? col2 + 2 : dim;
+		for (int i = row2Start; i <= row2End; i++) {
+			for (int j = col2Start; j <= col2End; j++) {
+				if (board[i][j] == -1) {
+					ArrayList<Integer> coords = new ArrayList<>();
+					coords.add(i);
+					coords.add(j);
+					available.add(coords);
+				}
+			}
+		}
 
-				switch (checkBoard.toWin) {
+		return available;
+	}
+
+	public void printBoard() {
+		System.out.println("======================");
+		System.out.println("   0  1  2  3  4  5 ");
+		for (int i = 0; i < dim; i++) {
+			System.out.print(i + " ");
+			for (int j = 0; j < dim; j++) {
+				if (board[i][j] == 0) {
+					System.out.print(" O ");
+				} else if (board[i][j] == 1) {
+					System.out.print(" X ");
+				} else {
+					System.out.print("   ");
+				}
+			}
+			System.out.println();
+		}
+		System.out.println();
+		System.out.println("======================");
+	}
+
+	public int checkWin() {
+		if (checkHorizontal() != -1) {
+			return checkHorizontal();
+		} else if (checkVertical() != -1) {
+			return checkVertical();
+		} else {
+			return checkVertical();
+		}
+	}
+
+	private int checkHorizontal() {
+
+		for (int i = 0; i < dim; i++) {
+			for (int j = 0; j <= dim - toWin; j++) {
+
+				switch (toWin) {
 					case (3):
-						if (checkBoard.board[i][j] == checkBoard.board[i][j + 1] &&
-										checkBoard.board[i][j + 1] == checkBoard.board[i][j + 2]) {
-							return checkBoard.board[i][j];
+						if (board[i][j] != -1 &&
+										board[i][j] == board[i][j + 1] &&
+										board[i][j + 1] == board[i][j + 2]) {
+							return board[i][j];
 						}
 						break;
 					case (4):
-						if (checkBoard.board[i][j] == checkBoard.board[i][j + 1] &&
-										checkBoard.board[i][j + 1] == checkBoard.board[i][j + 2] &&
-										checkBoard.board[i][j + 2] == checkBoard.board[i][j + 3]) {
-							return checkBoard.board[i][j];
+						if (board[i][j] != -1 &&
+										board[i][j] == board[i][j + 1] &&
+										board[i][j + 1] == board[i][j + 2] &&
+										board[i][j + 2] == board[i][j + 3]) {
+							return board[i][j];
 						}
 						break;
 					case (5):
-						if (checkBoard.board[i][j] == checkBoard.board[i][j + 1] &&
-										checkBoard.board[i][j + 1] == checkBoard.board[i][j + 2] &&
-										checkBoard.board[i][j + 2] == checkBoard.board[i][j + 3] &&
-										checkBoard.board[i][j + 3] == checkBoard.board[i][j + 4]) {
-							return checkBoard.board[i][j];
+						if (board[i][j] != -1 &&
+										board[i][j] == board[i][j + 1] &&
+										board[i][j + 1] == board[i][j + 2] &&
+										board[i][j + 2] == board[i][j + 3] &&
+										board[i][j + 3] == board[i][j + 4]) {
+							return board[i][j];
 						}
 				}
 			}
@@ -61,31 +138,34 @@ public class Board{
 	}
 
 
-	public int checkVertical(Board checkBoard) {
+	private int checkVertical() {
 
-		for (int i = 0; i < checkBoard.dim; i++) {
-			for (int j = 0; j <= checkBoard.dim - checkBoard.toWin; j++) {
+		for (int i = 0; i < dim; i++) {
+			for (int j = 0; j <= dim - toWin; j++) {
 
-				switch (checkBoard.toWin) {
+				switch (toWin) {
 					case (3):
-						if (checkBoard.board[j][i] == checkBoard.board[j + 1][i] &&
-										checkBoard.board[j + 1][i] == checkBoard.board[j + 2][i]) {
-							return checkBoard.board[j][i];
+						if (board[i][j] != -1 &&
+										board[j][i] == board[j + 1][i] &&
+										board[j + 1][i] == board[j + 2][i]) {
+							return board[j][i];
 						}
 						break;
 					case (4):
-						if (checkBoard.board[j][i] == checkBoard.board[j + 1][i] &&
-										checkBoard.board[j + 1][i] == checkBoard.board[j + 2][i] &&
-										checkBoard.board[j + 2][i] == checkBoard.board[j + 3][i]) {
-							return checkBoard.board[i][j];
+						if (board[i][j] != -1 &&
+										board[j][i] == board[j + 1][i] &&
+										board[j + 1][i] == board[j + 2][i] &&
+										board[j + 2][i] == board[j + 3][i]) {
+							return board[i][j];
 						}
 						break;
 					case (5):
-						if (checkBoard.board[j][i] == checkBoard.board[j + 1][i] &&
-										checkBoard.board[j + 1][i] == checkBoard.board[j + 2][i] &&
-										checkBoard.board[j + 2][i] == checkBoard.board[j + 3][i] &&
-										checkBoard.board[j + 3][i] == checkBoard.board[j + 4][i]) {
-							return checkBoard.board[i][j];
+						if (board[i][j] != -1 &&
+										board[j][i] == board[j + 1][i] &&
+										board[j + 1][i] == board[j + 2][i] &&
+										board[j + 2][i] == board[j + 3][i] &&
+										board[j + 3][i] == board[j + 4][i]) {
+							return board[i][j];
 						}
 				}
 			}
@@ -94,37 +174,40 @@ public class Board{
 	}
 
 
-	public int checkDiagonal(Board checkBoard) {
+	private int checkDiagonal() {
 
 		// check for upperleft to lowerright
-		for (int i = 0; i < checkBoard.dim; i++) {
-			for (int j = 0; j <= checkBoard.dim - checkBoard.toWin; j++) {
+		for (int i = 0; i < dim; i++) {
+			for (int j = 0; j <= dim - toWin; j++) {
 
-				switch (checkBoard.toWin) {
+				switch (toWin) {
 					case (3):
-						if (i <= checkBoard.dim - checkBoard.toWin) {
-							if (checkBoard.board[i][j] == checkBoard.board[i + 1][j + 1] &&
-											checkBoard.board[i + 1][j + 1] == checkBoard.board[i + 2][j + 2]) {
-								return checkBoard.board[i][j];
+						if (i <= dim - toWin) {
+							if (board[i][j] != -1 &&
+											board[i][j] == board[i + 1][j + 1] &&
+											board[i + 1][j + 1] == board[i + 2][j + 2]) {
+								return board[i][j];
 							}
 						}
 						break;
 					case (4):
-						if (i <= checkBoard.dim - checkBoard.toWin) {
-							if (checkBoard.board[i][j] == checkBoard.board[i + 1][j + 1] &&
-											checkBoard.board[i + 1][j + 1] == checkBoard.board[i + 2][j + 2] &&
-											checkBoard.board[i + 2][j + 2] == checkBoard.board[i + 3][j + 3]) {
-								return checkBoard.board[i][j];
+						if (i <= dim - toWin) {
+							if (board[i][j] != -1 &&
+											board[i][j] == board[i + 1][j + 1] &&
+											board[i + 1][j + 1] == board[i + 2][j + 2] &&
+											board[i + 2][j + 2] == board[i + 3][j + 3]) {
+								return board[i][j];
 							}
 						}
 						break;
 					case (5):
-						if (i <= checkBoard.dim - checkBoard.toWin) {
-							if (checkBoard.board[i][j] == checkBoard.board[i + 1][j + 1] &&
-											checkBoard.board[i + 1][j + 1] == checkBoard.board[i + 2][j + 2] &&
-											checkBoard.board[i + 2][j + 2] == checkBoard.board[i + 3][j + 3] &&
-											checkBoard.board[i + 3][j + 3] == checkBoard.board[i + 4][j + 4]) {
-								return checkBoard.board[i][j];
+						if (i <= dim - toWin) {
+							if (board[i][j] != -1 &&
+											board[i][j] == board[i + 1][j + 1] &&
+											board[i + 1][j + 1] == board[i + 2][j + 2] &&
+											board[i + 2][j + 2] == board[i + 3][j + 3] &&
+											board[i + 3][j + 3] == board[i + 4][j + 4]) {
+								return board[i][j];
 							}
 						}
 				}
@@ -132,34 +215,37 @@ public class Board{
 		}
 
 		// check for upperright to lowerleft
-		for (int i = 0; i < checkBoard.dim; i++) {
-			for (int j = checkBoard.dim - 1; j >= checkBoard.toWin; j--) {
+		for (int i = 0; i < dim; i++) {
+			for (int j = dim - 1; j >= toWin; j--) {
 
-				switch (checkBoard.toWin) {
+				switch (toWin) {
 					case (3):
-						if (i <= checkBoard.dim - checkBoard.toWin) {
-							if (checkBoard.board[i][j] == checkBoard.board[i + 1][j - 1] &&
-											checkBoard.board[i + 1][j - 1] == checkBoard.board[i + 2][j - 2]) {
-								return checkBoard.board[i][j];
+						if (i <= dim - toWin) {
+							if (board[i][j] != -1 &&
+											board[i][j] == board[i + 1][j - 1] &&
+											board[i + 1][j - 1] == board[i + 2][j - 2]) {
+								return board[i][j];
 							}
 						}
 						break;
 					case (4):
-						if (i <= checkBoard.dim - checkBoard.toWin) {
-							if (checkBoard.board[i][j] == checkBoard.board[i + 1][j - 1] &&
-											checkBoard.board[i + 1][j - 1] == checkBoard.board[i + 2][j - 2] &&
-											checkBoard.board[i + 2][j - 2] == checkBoard.board[i + 3][j - 3]) {
-								return checkBoard.board[i][j];
+						if (i <= dim - toWin) {
+							if (board[i][j] != -1 &&
+											board[i][j] == board[i + 1][j - 1] &&
+											board[i + 1][j - 1] == board[i + 2][j - 2] &&
+											board[i + 2][j - 2] == board[i + 3][j - 3]) {
+								return board[i][j];
 							}
 						}
 						break;
 					case (5):
-						if (i <= checkBoard.dim - checkBoard.toWin) {
-							if (checkBoard.board[i][j] == checkBoard.board[i + 1][j - 1] &&
-											checkBoard.board[i + 1][j - 1] == checkBoard.board[i + 2][j - 2] &&
-											checkBoard.board[i + 2][j - 2] == checkBoard.board[i + 3][j - 3] &&
-											checkBoard.board[i + 3][j - 3] == checkBoard.board[i + 4][j - 4]) {
-								return checkBoard.board[i][j];
+						if (i <= dim - toWin) {
+							if (board[i][j] != -1 &&
+											board[i][j] == board[i + 1][j - 1] &&
+											board[i + 1][j - 1] == board[i + 2][j - 2] &&
+											board[i + 2][j - 2] == board[i + 3][j - 3] &&
+											board[i + 3][j - 3] == board[i + 4][j - 4]) {
+								return board[i][j];
 							}
 						}
 				}
