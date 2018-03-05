@@ -2,12 +2,13 @@ import java.util.*;
 
 /**
  * THINGS TO DO:
- * 
+ *
  * CheckEmpty() in Board.java
  * TryMove return 0 when there is no empty spot
  * When available spot list is empty (nearby spots all occupied), add random
  * empty spots to the available list
  * Record secondToLastMove and lastMove in Pente.java
+ * Change checkWin to only checking nearby possible formation of a line (to O(1))
  */
 public class Pente {
 	public static void main(String[] args) {
