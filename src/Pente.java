@@ -1,3 +1,5 @@
+import com.sun.org.apache.regexp.internal.RE;
+
 import java.util.*;
 
 /**
@@ -11,11 +13,14 @@ import java.util.*;
  * Change checkWin to only checking nearby possible formation of a line (to O(1))
  */
 public class Pente {
+	private static final boolean REPORT = true;
+	private static long startTime;
+	
 	public static void main(String[] args) {
 
-		Board board = new Board(10, 5);
+		Board board = new Board(10, 4);
 
-		//twoPlayersMode(board);
+		// twoPlayersMode(board);
 		playerAIMode(board);
 
 	}
@@ -62,6 +67,7 @@ public class Pente {
 
 	private static void playerAIMode(Board board) {
 		int[] AIMove;
+		AIPlayer ai = new AIPlayer(board);
 		while (board.checkWin() == -1) {
 
 		  System.out.println(board);
@@ -80,9 +86,16 @@ public class Pente {
 				System.exit(0);
 			}
 
+			if (REPORT) {
+				startTime = System.currentTimeMillis();
+			}
 			System.out.println("AI Player X's turn: ...");
-			AIMove = board.AIGetMove();
+			AIMove = ai.AIGetMove();
 			board.move(1, AIMove[0], AIMove[1]);
+			if (REPORT) {
+				System.out.printf("AI Took %.2f seconds\n", (System.currentTimeMillis
+					() - startTime) / 1000.0);
+			}
 		}
 		System.out.println(board);
 		System.out.println("AI won!");

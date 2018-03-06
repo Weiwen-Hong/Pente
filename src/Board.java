@@ -2,17 +2,13 @@ import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 import java.util.*;
 public class Board{
-	private int dim;
+	public int dim;
 	private int toWin;
 	public int[][] board;
 	public int[] lastMove, stLastMove;
 	private static final int[][] directions = new int[][] {{1,0},{1,1},{0,1},
 		{-1,1}};
-	private static Random random = new Random();
-	private static final int MCNum = 800;
-	private static final int maxSpecialOperationElement = 15;
 	private static final int availableSpotDist = 1;
-	private static ArrayList<int[]> worklist;
 
 	public Board(int dimension, int toWin){
     this.dim = dimension;
@@ -34,7 +30,7 @@ public class Board{
 	 * Copy constructor
 	 * @param origin
 	 */
-	 private Board(Board origin) {
+	 public Board(Board origin) {
 		this.dim=origin.dim;
 		this.toWin=origin.toWin;
 		// make a deep copy of the board
@@ -152,184 +148,8 @@ public class Board{
       }
     }
 
-    str += "\n-----------------------------------------------\n";
+    str += "\n---------------------------------------------\n";
     return str;
-  }
-
-
-
-  public int[] AIGetMove() {
-	  return AIGetMove(stLastMove, lastMove);
-  }
-
-
-	public int[] AIGetMove(int[] lastAIMove, int[] lastHumanMove) {
-	  if (lastAIMove[0] == -1 || lastAIMove[1] == -1) {
-	  	lastAIMove[0] = lastAIMove[1] = dim / 2;
-		}
-
-	  // get moves around AI and human
-		worklist = this.getAvailableSpots(lastHumanMove[0],
-						lastHumanMove[1], lastAIMove[0], lastAIMove[1]);
-
-	  // add necessary defense to the list
-		int[] defense = directWin(0);
-		if (defense != null) {
-			return defense;
-		}
-
-		int[] win = directWin(1);
-		if (win != null) {
-			return win;
-		}
-
-		int[] almostDirectWin = almostDirectWin(1);
-		if (almostDirectWin != null) {
-			return almostDirectWin;
-		}
-
-		int bestMoveIndex = 0;
-
-		for (int possibleMove = 0; possibleMove < worklist.size(); possibleMove++) {
-
-		  // get the studied next move coord
-			int[] newMove = {(Integer)worklist.get(possibleMove)[0],
-							(Integer)worklist.get(possibleMove)[1]};
-
-			int winTime = 0;
-
-			for (int i = 0; i <= MCNum; i++) {
-				winTime += tryMove(new Board(this), lastAIMove, lastHumanMove, newMove, 1, 1);
-			}
-
-			worklist.get(possibleMove)[2] = winTime;
-
-			// update the best move
-			if ((Integer)worklist.get(possibleMove)[2] > (Integer)worklist.get
-        (bestMoveIndex)[2]) {
-				bestMoveIndex = possibleMove;
-			}
-		}
-
-		int[] newMove = new int[]{(Integer)worklist.get(bestMoveIndex)[0],
-						(Integer)worklist.get(bestMoveIndex)[1]};
-		return newMove;
-	}
-
-
-
-
-	// see the result of a move without actually making a move on the actual board
-	private int tryMove(Board newBoard, int[] secondToLastMove, int[] lastMove,
-											int[] thisMove, int player, int loopDepth) {
-		// make the move
-		newBoard.move(player, thisMove[0], thisMove[1]);
-
-		// check if absolute Win, add weight corresponding to depth
-		int[] directWin = directWin(player);
-		if (directWin != null) {
-			if (player == 1) {
-				if (loopDepth < 5) {
-					// ai will win
-					return 1 * (6 - loopDepth);
-				} else {
-					return 1;
-				}
-			} else if (loopDepth < 6) {
-				/*if (loopDepth < 3) {
-					worklist.add(directWin);
-				}*/
-				return -1 * (7 - loopDepth);
-			} else {
-				return -1;
-			}
-		}
-
-		directWin = directWin(1 - player);
-		if (directWin != null) {
-			if (player == 1) {
-				if (loopDepth < 6) {
-					// human will win
-					return -1 * (7 - loopDepth);
-				} else {
-					return -1;
-				}
-			} else if (loopDepth < 5) {
-				// ai will win
-				return 1 * (6 - loopDepth);
-			} else {
-				return 1;
-			}
-		}
-
-
-		if (newBoard.checkWin() == 0) {
-			return -1;
-		} else if (newBoard.checkWin() == 1) {
-			return 1;
-		} else {
-		  // get around coords
-			ArrayList<int[]> worklist = newBoard.getAvailableSpots
-							(lastMove[0], lastMove[1],
-											secondToLastMove[0], secondToLastMove[1]);
-
-			if (worklist.size() == 0) {
-			  worklist = newBoard.specialOperatoin(thisMove[0], thisMove[1]);
-      }
-
-      if (worklist.size() == 0) {
-			  return 0;
-      }
-
-      random.setSeed(System.currentTimeMillis());
-			int choice = random.nextInt(worklist.size());
-
-			int[] newMove = new int[] {(Integer)worklist.get(choice)[0],
-							(Integer)worklist.get(choice)[1]};
-			return tryMove(newBoard, lastMove, thisMove, newMove, 1 - player, loopDepth + 1);
-		}
-	}
-
-
-
-	private ArrayList<int[]> specialOperatoin(int row, int col) {
-	  HashSet<int[]> sets = new HashSet<int[]>();
-	  int count = 0;
-	  int bound = 1;
-
-	  int[] upperLeft = new int[] {row - bound, col + bound};
-	  int[] lowerRight = new int[] {row + bound, col + bound};
-
-	  int[] boundedPt1, boundedPt2;
-
-	  while (count < maxSpecialOperationElement && (ifInBound(upperLeft) ||
-      ifInBound(lowerRight))) {
-	    boundedPt1 = toInBound(upperLeft);
-	    boundedPt2 = toInBound(lowerRight);
-
-	    for (int j = boundedPt1[0]; j <= boundedPt2[1]; j++) {
-	      for (int k = boundedPt1[1]; k <= boundedPt2[1]; k++) {
-	        // check if on boarder
-          if (Math.abs(row - j) == bound && Math.abs(col - k) == bound) {
-
-            // check if empty
-            if(board[j][k] == -1) {
-              sets.add(new int[] {j,k});
-              count++;
-            }
-
-          }
-        }
-      }
-
-
-	    // increase bound
-      bound++;
-      upperLeft = new int[] {row - bound, col + bound};
-      lowerRight = new int[] {row + bound, col + bound};
-    }
-
-    return new ArrayList<>(sets);
   }
 
 
@@ -341,7 +161,6 @@ public class Board{
 		}
 
 		// set directions
-
 		int currentX, currentY;
 		int xIncre, yIncre;
 		int count;
@@ -391,7 +210,7 @@ public class Board{
   }
 
 
-  private boolean ifInBound(int row, int col) {
+  public boolean ifInBound(int row, int col) {
 	  if (row < 0 || row >= dim) {
 	    return false;
     }
@@ -405,13 +224,13 @@ public class Board{
 
 
 
-  private boolean ifInBound(int[] arr) {
+  public boolean ifInBound(int[] arr) {
 	  return ifInBound(arr[0], arr[1]);
   }
 
 
 
-  private int[] toInBound(int row, int col) {
+  public int[] toInBound(int row, int col) {
 	  row = (row >= 0 ? row : 0);
 	  row = (row < dim ? row : dim - 1);
 
@@ -423,13 +242,13 @@ public class Board{
 
 
 
-  private int[] toInBound(int[] arr) {
+  public int[] toInBound(int[] arr) {
 	  return toInBound(arr[0], arr[1]);
   }
 
 
 
-  private ArrayList<int[]> getAllPLayerCoord(int player) {
+  public ArrayList<int[]> getAllPLayerCoord(int player) {
 		ArrayList<int[]> list = new ArrayList<>();
 
 		for (int j = 0; j < dim; j++) {
@@ -444,7 +263,7 @@ public class Board{
 	}
 
 
-	private ArrayList<int[]> getCoordNextTo(int row, int col) {
+	public ArrayList<int[]> getCoordNextTo(int row, int col) {
 		HashSet<int[]> available = new HashSet<>();
 
 		// calculate and get available spot around first coordinates
@@ -471,71 +290,4 @@ public class Board{
 	}
 
 
-	private int[] almostDirectWin(int player) {
-		ArrayList<int[]> allPlayerCoord = getAllPLayerCoord(1 - player);
-		HashSet<int[]> allAvailableMove = new HashSet<>();
-
-		for (int[] coord : allPlayerCoord) {
-			ArrayList<int[]> temp = getCoordNextTo(coord[0], coord[1]);
-			allAvailableMove.addAll(temp);
-		}
-
-		ArrayList<int[]> allMoves = new ArrayList<>(allAvailableMove);
-
-
-		Board testBoard;
-		int[] thisGame = null;
-
-		for (int[] thisCoord : allMoves) {
-			// find the coord that if the ai fails to occupy, will result in a absolute loss
-			testBoard = new Board(this);
-
-			testBoard.move(1 - player, thisCoord[0], thisCoord[1]);
-			ArrayList<int[]> allMovesOriginal = testBoard.getAllPLayerCoord(1 - player);
-			HashSet<int[]> allMoves2 = new HashSet<>(allMovesOriginal);
-
-			boolean defenseUseless = true;
-
-			for (int[] defenseCoord : allMoves2) {
-				// a good thisCoord should have defenseUseless true throughout the for loop
-				testBoard.move(player, defenseCoord[0], defenseCoord[1]);
-				thisGame = testBoard.directWin(1 - player);
-				if (thisGame == null) {
-					defenseUseless = false;
-				}
-				if (thisGame != null) {
-					//defenseUseless = false;
-				}
-			}
-
-			if (defenseUseless) {
-				return thisCoord;
-			}
-		}
-		return null;
-	}
-
-
-	private int[] directWin(int player) {
-	  ArrayList<int[]> allPlayerCoord = getAllPLayerCoord(player);
-	  HashSet<int[]> allAvailableMove = new HashSet<>();
-
-	  for (int[] coord : allPlayerCoord) {
-	  	ArrayList<int[]> temp = getCoordNextTo(coord[0], coord[1]);
-			allAvailableMove.addAll(temp);
-		}
-
-		ArrayList<int[]> allMoves = new ArrayList<>(allAvailableMove);
-
-	  Board testBoard;
-	  for (int[] thisCoord : allMoves) {
-	  	testBoard = new Board(this);
-
-	  	testBoard.move(player, thisCoord[0], thisCoord[1]);
-	  	if (testBoard.checkWin() == player) {
-	  		return thisCoord;
-			}
-		}
-		return null;
-	}
 }
