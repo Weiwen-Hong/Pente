@@ -203,6 +203,10 @@ public class Board{
 			int winTime = 0;
 
 			for (int i = 0; i <= MCNum; i++) {
+				int[] win = directWin(1);
+			  if (win != null) {
+			  	return win;
+				}
 				winTime += tryMove(this, lastAIMove, lastHumanMove, newMove, 1);
 			}
 
@@ -230,6 +234,16 @@ public class Board{
 		Board newBoard = new Board(origin);
 		// make the move
 		newBoard.move(player, thisMove[0], thisMove[1]);
+
+		// check if absolute Win
+		int[] directWin = directWin(player);
+		if (directWin != null) {
+		  newBoard.move(1- player, directWin[0], directWin[1]);
+		}
+		directWin = directWin(1 - player);
+		if (directWin != null) {
+			newBoard.move(1 - player, directWin[0], directWin[1]);
+		}
 
 
 		if (newBoard.checkWin() == 0) {
@@ -394,4 +408,75 @@ public class Board{
   private int[] toInBound(int[] arr) {
 	  return toInBound(arr[0], arr[1]);
   }
+
+
+
+  private ArrayList<int[]> getAllPLayerCoord(int player) {
+		ArrayList<int[]> list = new ArrayList<>();
+
+		for (int j = 0; j < dim; j++) {
+			for (int k = 0; k < dim; k++) {
+				if (board[j][k] == player) {
+					list.add(new int[] {j,k});
+				}
+			}
+		}
+
+		return list;
+	}
+
+
+	private ArrayList<int[]> getCoordNextTo(int row, int col) {
+		HashSet<int[]> available = new HashSet<>();
+
+		// calculate and get available spot around first coordinates
+		int row1Start = toInBound(row - availableSpotDist, col -
+			availableSpotDist)[0];
+		int col1Start = toInBound(row - availableSpotDist, col -
+			availableSpotDist)[1];
+		int row1End = toInBound(row + availableSpotDist, col +
+			availableSpotDist)[0];
+		int col1End = toInBound(row + availableSpotDist, col +
+			availableSpotDist)[1];
+
+
+		for (int i = row1Start; i <= row1End; i++) {
+			for (int j = col1Start; j <= col1End; j++) {
+				if (board[i][j] == -1) {
+					int[] coords = new int[] {i, j, 0};
+					available.add(coords);
+				}
+			}
+		}
+
+		return new ArrayList<int[]>(available);
+	}
+
+
+
+	private int[] directWin(int player) {
+	  ArrayList<int[]> allPlayerCoord = getAllPLayerCoord(player);
+	  HashSet<int[]> allAvailableMove = new HashSet<>();
+
+	  for (int[] coord : allPlayerCoord) {
+	  	ArrayList<int[]> temp = getCoordNextTo(coord[0], coord[1]);
+
+	  	for (int[] thisCoord : temp) {
+	  		allAvailableMove.add(thisCoord);
+			}
+		}
+
+		ArrayList<int[]> allMoves = new ArrayList<>(allAvailableMove);
+
+	  Board testBoard;
+	  for (int[] thisCoord : allMoves) {
+	  	testBoard = new Board(this);
+
+	  	testBoard.move(player, thisCoord[0], thisCoord[1]);
+	  	if (testBoard.checkWin() == player) {
+	  		return thisCoord;
+			}
+		}
+		return null;
+	}
 }
