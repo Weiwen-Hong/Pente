@@ -7,7 +7,7 @@ public class Board{
 	public int[][] board;
 	public int[] lastMove, stLastMove;
 	private static final int[][] directions = new int[][] {{1,0},{1,1},{0,1},
-		{-1,-1}};
+		{-1,1}};
 	private static Random random = new Random();
 	private static final int MCNum = 10000;
 	private static final int maxSpecialOperationElement = 15;
@@ -19,7 +19,7 @@ public class Board{
     board = new int[dim][dim];
     lastMove = new int[2];
     stLastMove = new int[2];
-    stLastMove[0] = stLastMove[1] = lastMove[0] = lastMove[1] = -1;
+    stLastMove[0] = stLastMove[1] = lastMove[0] = lastMove[1] = 4;
 
     System.out.println("Initialized");
     for (int i = 0; i < dim; i++) {
@@ -81,13 +81,13 @@ public class Board{
 	  HashSet<int[]> available = new HashSet<>();
 
 		// calculate and get available spot around first coordinates
-    int row1Start = toInBound(row1 - availableSpotDist, row1 -
+    int row1Start = toInBound(row1 - availableSpotDist, col1 -
       availableSpotDist)[0];
-    int col1Start = toInBound(row1 - availableSpotDist, row1 -
+    int col1Start = toInBound(row1 - availableSpotDist, col1 -
       availableSpotDist)[1];
-    int row1End = toInBound(row1 + availableSpotDist, row1 +
+    int row1End = toInBound(row1 + availableSpotDist, col1 +
       availableSpotDist)[0];
-    int col1End = toInBound(row1 + availableSpotDist, row1 +
+    int col1End = toInBound(row1 + availableSpotDist, col1 +
       availableSpotDist)[1];
 
 
@@ -190,8 +190,7 @@ public class Board{
 
 	  // get moves around AI and human
 		ArrayList<int[]> worklist = this.getAvailableSpots(lastAIMove[0],
-      lastAIMove[1],
-						lastHumanMove[0], lastHumanMove[1]);
+      lastAIMove[1], lastHumanMove[0], lastHumanMove[1]);
 
 		int bestMoveIndex = 0;
 
@@ -232,6 +231,7 @@ public class Board{
 		// make the move
 		newBoard.move(player, thisMove[0], thisMove[1]);
 
+
 		if (newBoard.checkWin() == 0) {
 			return -1;
 		} else if (newBoard.checkWin() == 1) {
@@ -242,7 +242,7 @@ public class Board{
 							(secondToLastMove[0], secondToLastMove[1], lastMove[0], lastMove[1]);
 
 			if (worklist.size() == 0) {
-			  worklist = specialOperatoin(thisMove[0], thisMove[1]);
+			  worklist = newBoard.specialOperatoin(thisMove[0], thisMove[1]);
       }
 
       if (worklist.size() == 0) {
