@@ -61,6 +61,7 @@ public class Pente {
 	}
 
 	private static void playerAIMode(Board board) {
+		int[] AIMove;
 		while (board.checkWin() == -1) {
 
 		  System.out.println(board);
@@ -75,7 +76,8 @@ public class Pente {
 
 
 			System.out.println("AI Player X's turn: ...");
-			board.AIGetMove();
+			AIMove = board.AIGetMove();
+			board.move(1, AIMove[0], AIMove[1]);
 		}
 	}
 

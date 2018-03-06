@@ -1,40 +1,52 @@
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
+
 import java.util.*;
 public class Board{
 	private int dim;
 	private int toWin;
 	public int[][] board;
-	private int[] lastMove, stLastMove;
+	public int[] lastMove, stLastMove;
+	private static final int[][] directions = new int[][] {{1,0},{1,1},{0,1},
+		{-1,-1}};
+	private static Random random = new Random();
+	private static final int MCNum = 10000;
+	private static final int maxSpecialOperationElement = 15;
+	private static final int availableSpotDist = 1;
 
 	public Board(int dimension, int toWin){
+    this.dim = dimension;
+    this.toWin = toWin;
+    board = new int[dim][dim];
+    lastMove = new int[2];
+    stLastMove = new int[2];
+    stLastMove[0] = stLastMove[1] = lastMove[0] = lastMove[1] = -1;
 
-		this.dim=dimension;
-		this.toWin=toWin;
-		board = new int[dim][dim];
-		lastMove = new int[2];
-		stLastMove = new int[2];
-		stLastMove[0] = stLastMove[1] = lastMove[0] = lastMove[1] = -1;
-
-		for (int i = 0; i < dim; i++) {
-			for (int j = 0; j < dim; j++) {
-				board[i][j] = -1;
-			}
-		}
+    System.out.println("Initialized");
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        board[i][j] = -1;
+      }
+    }
 	}
 
 	/**
 	 * Copy constructor
 	 * @param origin
 	 */
-	private Board(Board origin) {
+	 private Board(Board origin) {
 		this.dim=origin.dim;
 		this.toWin=origin.toWin;
 		// make a deep copy of the board
-		int[][] newBoard = new int[origin.board.length][origin.board[0].length];
-		for (int i = 0; i < newBoard.length; i++) {
-			for (int j = 0; j < newBoard[0].length; j++) {
+		int[][] newBoard = new int[dim][dim];
+		for (int i = 0; i < dim; i++) {
+			for (int j = 0; j < dim; j++) {
 				newBoard[i][j] = origin.board[i][j];
 			}
 		}
+
+		lastMove = new int[] {origin.lastMove[0], origin.lastMove[1]};
+		stLastMove = new int[] {origin.stLastMove[0], origin.stLastMove[1]};
+		board = newBoard;
 	}
 
 	public boolean move(int player, int row, int col) {
@@ -58,26 +70,32 @@ public class Board{
 		return true;
 	}
 
+
+
 	/**
 	 * Used for the AI player, the arguments are the player's last move and
 	 * the opponent's last move
  	 */
-	public ArrayList<ArrayList> getAvailableSpots(int row1, int col1, int row2, int col2) {
-	  HashSet<ArrayList<Integer>> available = new HashSet<>();
-
+	public ArrayList<int[]> getAvailableSpots(int row1, int col1, int row2, int
+    col2) {
+	  HashSet<int[]> available = new HashSet<>();
 
 		// calculate and get available spot around first coordinates
-		int row1Start = (row1 >= 2) ? row1 - 2 : 0;
-		int row1End = (row1 + 2 < dim) ? row1 + 2 : dim;
-		int col1Start = (col1 >= 2) ? col1 - 2 : 0;
-		int col1End = (col1 + 2 < dim) ? col1 + 2 : dim;
+    int row1Start = toInBound(row1 - availableSpotDist, row1 -
+      availableSpotDist)[0];
+    int col1Start = toInBound(row1 - availableSpotDist, row1 -
+      availableSpotDist)[1];
+    int row1End = toInBound(row1 + availableSpotDist, row1 +
+      availableSpotDist)[0];
+    int col1End = toInBound(row1 + availableSpotDist, row1 +
+      availableSpotDist)[1];
+
 
 		for (int i = row1Start; i <= row1End; i++) {
 			for (int j = col1Start; j <= col1End; j++) {
+			  System.out.println(i + "   " + j);
 				if (board[i][j] == -1) {
-					ArrayList<Integer> coords = new ArrayList<>();
-					coords.add(i);
-					coords.add(j);
+					int[] coords = new int[] {i, j, 0};
 					available.add(coords);
 				}
 			}
@@ -85,22 +103,22 @@ public class Board{
 
     // calculate and get available spot around first coordinates
 		int row2Start = (row2 >= 1) ? row2 - 1 : 0;
-		int row2End = (row2 + 1 < dim) ? row2 + 1 : dim;
+		int row2End = (row2 + 1 < dim) ? row2 + 1 : dim - 1;
 		int col2Start = (col2 >= 1) ? col2 - 1 : 0;
-		int col2End = (col2 + 1 < dim) ? col2 + 1 : dim;
+		int col2End = (col2 + 1 < dim) ? col2 + 1 : dim - 1;
 		for (int i = row2Start; i <= row2End; i++) {
 			for (int j = col2Start; j <= col2End; j++) {
 				if (board[i][j] == -1) {
-					ArrayList<Integer> coords = new ArrayList<>();
-					coords.add(i);
-					coords.add(j);
+				  int[] coords = new int[] {i, j, 0};
 					available.add(coords);
 				}
 			}
 		}
 
-		return new ArrayList<ArrayList>(available);
+		return new ArrayList<int[]>(available);
 	}
+
+
 
 	public void printBoard() {
 		System.out.println("============================");
@@ -167,35 +185,52 @@ public class Board{
 
 
 	public int[] AIGetMove(int[] lastAIMove, int[] lastHumanMove) {
-		ArrayList<ArrayList> worklist = this.getAvailableSpots(lastAIMove[0], lastAIMove[1],
+	  if (lastAIMove[0] == -1 || lastAIMove[1] == -1) {
+	  	lastAIMove[0] = lastAIMove[1] = dim / 2;
+		}
+
+	  // get moves around AI and human
+		ArrayList<int[]> worklist = this.getAvailableSpots(lastAIMove[0],
+      lastAIMove[1],
 						lastHumanMove[0], lastHumanMove[1]);
 
 		int bestMoveIndex = 0;
 
 		for (int possibleMove = 0; possibleMove < worklist.size(); possibleMove++) {
-			int[] newMove = new int[]{(Integer)worklist.get(possibleMove).get(0),
-							(Integer)worklist.get(possibleMove).get(1)};
+
+		  // get the studied next move coord
+			int[] newMove = {(Integer)worklist.get(possibleMove)[0],
+							(Integer)worklist.get(possibleMove)[1]};
+
 			int winTime = 0;
-			for (int i = 0; i <= 50; i++) {
+
+			for (int i = 0; i <= MCNum; i++) {
 				winTime += tryMove(this, lastAIMove, lastHumanMove, newMove, 1);
 			}
-			worklist.get(possibleMove).add(winTime);
+
+			worklist.get(possibleMove)[2] = winTime;
 
 			// update the best move
-			if ((Integer)worklist.get(possibleMove).get(2) > (Integer)worklist.get(bestMoveIndex).get(2)) {
+			if ((Integer)worklist.get(possibleMove)[2] > (Integer)worklist.get
+        (bestMoveIndex)[2]) {
 				bestMoveIndex = possibleMove;
 			}
 		}
 
-		int[] newMove = new int[]{(Integer)worklist.get(bestMoveIndex).get(0),
-						(Integer)worklist.get(bestMoveIndex).get(1)};
+		int[] newMove = new int[]{(Integer)worklist.get(bestMoveIndex)[0],
+						(Integer)worklist.get(bestMoveIndex)[1]};
 		return newMove;
 	}
+
+
+
 
 	// see the result of a move without actually making a move on the actual board
 	private int tryMove(Board origin, int[] secondToLastMove, int[] lastMove,
 											int[] thisMove, int player) {
+	  // copy the board
 		Board newBoard = new Board(origin);
+		// make the move
 		newBoard.move(player, thisMove[0], thisMove[1]);
 
 		if (newBoard.checkWin() == 0) {
@@ -203,76 +238,165 @@ public class Board{
 		} else if (newBoard.checkWin() == 1) {
 			return 1;
 		} else {
-			ArrayList<ArrayList> worklist = newBoard.getAvailableSpots
+		  // get around coords
+			ArrayList<int[]> worklist = newBoard.getAvailableSpots
 							(secondToLastMove[0], secondToLastMove[1], lastMove[0], lastMove[1]);
-			Random random = new Random();
+
+			if (worklist.size() == 0) {
+			  worklist = specialOperatoin(thisMove[0], thisMove[1]);
+      }
+
+      if (worklist.size() == 0) {
+			  return 0;
+      }
+
+      random.setSeed(System.currentTimeMillis());
 			int choice = random.nextInt(worklist.size());
-			int[] newMove = new int[] {(Integer)worklist.get(choice).get(0),
-							(Integer)worklist.get(choice).get(1)};
+
+			int[] newMove = new int[] {(Integer)worklist.get(choice)[0],
+							(Integer)worklist.get(choice)[1]};
 			return tryMove(newBoard, lastMove, thisMove, newMove, 1 - player);
 		}
 	}
 
 
 
-	public int checkWin() {
+	private ArrayList<int[]> specialOperatoin(int row, int col) {
+	  HashSet<int[]> sets = new HashSet<int[]>();
+	  int count = 0;
+	  int bound = 1;
 
-	  // no move
-    if (lastMove[0] == -1 || lastMove[1] == -1) {
-      return -1;
-    }
+	  int[] upperLeft = new int[] {row - bound, col + bound};
+	  int[] lowerRight = new int[] {row + bound, col + bound};
 
-    // get coordinate from lastMove
-    int row = lastMove[0];
-    int col = lastMove[1];
+	  int[] boundedPt1, boundedPt2;
 
-    int thePlay = board[row][col];
+	  while (count < maxSpecialOperationElement && (ifInBound(upperLeft) ||
+      ifInBound(lowerRight))) {
+	    boundedPt1 = toInBound(upperLeft);
+	    boundedPt2 = toInBound(lowerRight);
 
-    // get the bound of outer around
-    int rowLow = row - 2;
-    int rowHigh = row + 2;
-    int colLow = col - 2;
-    int colHigh = col + 2;
+	    for (int j = boundedPt1[0]; j <= boundedPt2[1]; j++) {
+	      for (int k = boundedPt1[1]; k <= boundedPt2[1]; k++) {
+	        // check if on boarder
+          if (Math.abs(row - j) == bound && Math.abs(col - k) == bound) {
 
-    for (int j = rowLow; j <=rowHigh; j++) {
-      if (j < 0 || j >= dim) {
-        continue;
-      }
+            // check if empty
+            if(board[j][k] == -1) {
+              sets.add(new int[] {j,k});
+              count++;
+            }
 
-      for (int k = colLow; k <= colHigh; k++) {
-        // out bound
-        if (k < 0 || k >= dim) {
-          continue;
-        }
-        // skip the mid square itself
-        if ((j == row && k == col)) {
-          continue;
-        }
-
-        if (board[j][k] == thePlay) {
-          System.out.println(j + " " + k);
-          int x = -1,y = -1;
-
-          // inner
-          if (Math.abs(j - row) == 1) {
-            x = 2 * row - j;
-            y = 2 * col - k;
-          }
-          // outer
-          else if (Math.abs(j - row) == 2) {
-            x = (row + j) / 2;
-            y = (col + k) / 2;
-          }
-
-          if (board[x][y] == thePlay) {
-            return thePlay;
           }
         }
       }
+
+
+	    // increase bound
+      bound++;
+      upperLeft = new int[] {row - bound, col + bound};
+      lowerRight = new int[] {row + bound, col + bound};
     }
 
-    return -1;
+    return new ArrayList<>(sets);
   }
+
+
+
+	public int checkWin() {
+		// no move
+		if (lastMove[0] == -1 || lastMove[1] == -1) {
+			return -1;
+		}
+
+		// set directions
+
+		int currentX, currentY;
+		int xIncre, yIncre;
+		int count;
+		int thePlayer = board[lastMove[0]][lastMove[1]];
+		if (thePlayer == -1) {
+		  return -1;
+    }
+
+		for (int[] increDir : directions) {
+			xIncre = increDir[0];
+			yIncre = increDir[1];
+
+			currentX = lastMove[0] + xIncre;
+			currentY = lastMove[1] + yIncre;
+			count = 1;
+
+			// check all in positive
+      while (ifInBound(currentX, currentY) && board[currentX][currentY] == thePlayer) {
+        currentX += xIncre;
+        currentY += yIncre;
+        count++;
+
+        if (count >=  toWin) {
+          return thePlayer;
+        }
+      }
+
+      xIncre = -xIncre;
+      yIncre = -yIncre;
+
+      currentX = lastMove[0] + xIncre;
+      currentY = lastMove[1] + yIncre;
+
+      // check all in negative
+      while (ifInBound(currentX, currentY) && board[currentX][currentY] == thePlayer) {
+        currentX += xIncre;
+        currentY += yIncre;
+        count++;
+      }
+
+      if (count >=  toWin) {
+        return thePlayer;
+      }
+		}
+
+	  return -1;
+  }
+
+
+  private boolean ifInBound(int row, int col) {
+	  if (row < 0 || row >= dim) {
+	    return false;
+    }
+
+    if (col < 0 || col >= dim) {
+	    return false;
+    }
+
+    return true;
+  }
+
+
+
+  private boolean ifInBound(int[] arr) {
+	  return ifInBound(arr[0], arr[1]);
+  }
+
+
+
+  private int[] toInBound(int row, int col) {
+	  row = (row >= 0 ? row : 0);
+	  row = (row < dim ? dim : dim - 1);
+	  col = (col >= 0 ? col : 0);
+	  col = (col < dim ? col : dim - 1);
+
+	  return new int[] {row, col};
+  }
+
+
+
+  private int[] toInBound(int[] arr) {
+	  return toInBound(arr[0], arr[1]);
+  }
+
+
+
 
 	public int lastcheckWin() {
 		if (checkHorizontal() != -1) {
