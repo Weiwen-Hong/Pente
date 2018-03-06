@@ -3,12 +3,16 @@ public class Board{
 	private int dim;
 	private int toWin;
 	public int[][] board;
+	private int[] lastMove, stLastMove;
 
 	public Board(int dimension, int toWin){
 
 		this.dim=dimension;
 		this.toWin=toWin;
 		board = new int[dim][dim];
+		lastMove = new int[2];
+		stLastMove = new int[2];
+		stLastMove[0] = stLastMove[1] = lastMove[0] = lastMove[1] = -1;
 
 		for (int i = 0; i < dim; i++) {
 			for (int j = 0; j < dim; j++) {
@@ -44,7 +48,13 @@ public class Board{
 			return false;
 		}
 
-		board[row][col] = player;
+		stLastMove[0] = lastMove[0];
+		stLastMove[1] = stLastMove[1];
+
+    board[row][col] = player;
+
+    lastMove[0] = row;
+    lastMove[1] = col;
 		return true;
 	}
 
@@ -53,11 +63,15 @@ public class Board{
 	 * the opponent's last move
  	 */
 	public ArrayList<ArrayList> getAvailableSpots(int row1, int col1, int row2, int col2) {
-		ArrayList<ArrayList> available = new ArrayList<>();
+	  HashSet<ArrayList<Integer>> available = new HashSet<>();
+
+
+		// calculate and get available spot around first coordinates
 		int row1Start = (row1 >= 2) ? row1 - 2 : 0;
 		int row1End = (row1 + 2 < dim) ? row1 + 2 : dim;
 		int col1Start = (col1 >= 2) ? col1 - 2 : 0;
 		int col1End = (col1 + 2 < dim) ? col1 + 2 : dim;
+
 		for (int i = row1Start; i <= row1End; i++) {
 			for (int j = col1Start; j <= col1End; j++) {
 				if (board[i][j] == -1) {
@@ -69,6 +83,7 @@ public class Board{
 			}
 		}
 
+    // calculate and get available spot around first coordinates
 		int row2Start = (row2 >= 1) ? row2 - 1 : 0;
 		int row2End = (row2 + 1 < dim) ? row2 + 1 : dim;
 		int col2Start = (col2 >= 1) ? col2 - 1 : 0;
@@ -84,7 +99,7 @@ public class Board{
 			}
 		}
 
-		return available;
+		return new ArrayList<ArrayList>(available);
 	}
 
 	public void printBoard() {
@@ -110,6 +125,45 @@ public class Board{
 		System.out.println();
 		System.out.println("============================");
 	}
+
+
+
+	@Override
+  public String toString() {
+	  String str = "  | ";
+    // print head number
+    for (int i = 0; i < dim; i++) {
+      str += i + " | ";
+    }
+
+    // print body
+    for (int row = 0; row < dim; row++)
+    {
+      str += "\n---------------------------------------------\n";
+      str += row + " |";
+
+      for (int column = 0; column < dim; column++)
+      {
+        if (board[row][column] == 0) {
+          str += " O ";
+        } else if (board[row][column] == 1) {
+          str += " X ";
+        } else {
+          str += "   ";
+        }
+        str += "|";
+      }
+    }
+
+    str += "\n-----------------------------------------------\n";
+    return str;
+  }
+
+
+
+  public int[] AIGetMove() {
+	  return AIGetMove(stLastMove, lastMove);
+  }
 
 
 	public int[] AIGetMove(int[] lastAIMove, int[] lastHumanMove) {
@@ -159,7 +213,68 @@ public class Board{
 		}
 	}
 
+
+
 	public int checkWin() {
+
+	  // no move
+    if (lastMove[0] == -1 || lastMove[1] == -1) {
+      return -1;
+    }
+
+    // get coordinate from lastMove
+    int row = lastMove[0];
+    int col = lastMove[1];
+
+    int thePlay = board[row][col];
+
+    // get the bound of outer around
+    int rowLow = row - 2;
+    int rowHigh = row + 2;
+    int colLow = col - 2;
+    int colHigh = col + 2;
+
+    for (int j = rowLow; j <=rowHigh; j++) {
+      if (j < 0 || j >= dim) {
+        continue;
+      }
+
+      for (int k = colLow; k <= colHigh; k++) {
+        // out bound
+        if (k < 0 || k >= dim) {
+          continue;
+        }
+        // skip the mid square itself
+        if ((j == row && k == col)) {
+          continue;
+        }
+
+        if (board[j][k] == thePlay) {
+          System.out.println(j + " " + k);
+          int x = -1,y = -1;
+
+          // inner
+          if (Math.abs(j - row) == 1) {
+            x = 2 * row - j;
+            y = 2 * col - k;
+          }
+          // outer
+          else if (Math.abs(j - row) == 2) {
+            x = (row + j) / 2;
+            y = (col + k) / 2;
+          }
+
+          if (board[x][y] == thePlay) {
+            return thePlay;
+          }
+        }
+      }
+    }
+
+    return -1;
+  }
+
+	public int lastcheckWin() {
 		if (checkHorizontal() != -1) {
 			return checkHorizontal();
 		} else if (checkVertical() != -1) {

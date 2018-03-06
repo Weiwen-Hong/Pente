@@ -14,14 +14,16 @@ public class Pente {
 	public static void main(String[] args) {
 
 		Board board = new Board(8, 3);
-		twoPlayersMode(board);
+
+		// twoPlayersMode(board);
+		playerAIMode(board);
 
 	}
 
 	private static void twoPlayersMode(Board board) {
 		while (board.checkWin() == -1) {
 
-			board.printBoard();
+		  System.out.println(board);
 			int[] coords;
 			System.out.println("Player O's turn: (type coords separated by comma)");
 			coords = getCoords();
@@ -31,7 +33,7 @@ public class Pente {
 				coords = getCoords();
 			}
 
-			board.printBoard();
+			System.out.println(board);
 			if (board.checkWin() == -1) {
 				System.out.println("Player X's turn: (type coords separated by comma)");
 				coords = getCoords();
@@ -61,7 +63,7 @@ public class Pente {
 	private static void playerAIMode(Board board) {
 		while (board.checkWin() == -1) {
 
-			board.printBoard();
+		  System.out.println(board);
 			int[] coords;
 			System.out.println("Player O's turn: (type coords separated by comma)");
 			coords = getCoords();
