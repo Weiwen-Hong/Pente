@@ -233,7 +233,7 @@ public class Board{
 											int[] thisMove, int player) {
 	  // copy the board
 		//Board newBoard = new Board(origin);
-		//Board newBoard = origin;
+		//GIBoard newBoard = origin;
 		// make the move
 		newBoard.move(player, thisMove[0], thisMove[1]);
 
