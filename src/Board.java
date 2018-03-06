@@ -9,7 +9,7 @@ public class Board{
 	private static final int[][] directions = new int[][] {{1,0},{1,1},{0,1},
 		{-1,1}};
 	private static Random random = new Random();
-	private static final int MCNum = 10000;
+	private static final int MCNum = 20000;
 	private static final int maxSpecialOperationElement = 15;
 	private static final int availableSpotDist = 1;
 
@@ -19,7 +19,7 @@ public class Board{
     board = new int[dim][dim];
     lastMove = new int[2];
     stLastMove = new int[2];
-    stLastMove[0] = stLastMove[1] = lastMove[0] = lastMove[1] = 4;
+    stLastMove[0] = stLastMove[1] = lastMove[0] = lastMove[1] = -1;
 
     System.out.println("Initialized");
     for (int i = 0; i < dim; i++) {
@@ -67,6 +67,11 @@ public class Board{
 
     lastMove[0] = row;
     lastMove[1] = col;
+
+    if (stLastMove[0]==-1) {
+    	stLastMove[0] = lastMove[0];
+			stLastMove[1] = lastMove[1];
+		}
 		return true;
 	}
 
@@ -203,7 +208,7 @@ public class Board{
 			int winTime = 0;
 
 			for (int i = 0; i <= MCNum; i++) {
-				winTime += tryMove(this, lastAIMove, lastHumanMove, newMove, 1);
+				winTime += tryMove(new Board(this), lastAIMove, lastHumanMove, newMove, 1);
 			}
 
 			worklist.get(possibleMove)[2] = winTime;
@@ -224,10 +229,11 @@ public class Board{
 
 
 	// see the result of a move without actually making a move on the actual board
-	private int tryMove(Board origin, int[] secondToLastMove, int[] lastMove,
+	private int tryMove(Board newBoard, int[] secondToLastMove, int[] lastMove,
 											int[] thisMove, int player) {
 	  // copy the board
-		Board newBoard = new Board(origin);
+		//Board newBoard = new Board(origin);
+		//Board newBoard = origin;
 		// make the move
 		newBoard.move(player, thisMove[0], thisMove[1]);
 

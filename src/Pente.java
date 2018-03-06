@@ -13,7 +13,7 @@ import java.util.*;
 public class Pente {
 	public static void main(String[] args) {
 
-		Board board = new Board(8, 3);
+		Board board = new Board(8, 4);
 
 		//twoPlayersMode(board);
 		playerAIMode(board);
@@ -74,11 +74,19 @@ public class Pente {
 				coords = getCoords();
 			}
 
+			System.out.println(board);
+			if (board.checkWin() != -1) {
+				System.out.println("Human won!");
+				System.exit(0);
+			}
 
 			System.out.println("AI Player X's turn: ...");
 			AIMove = board.AIGetMove();
 			board.move(1, AIMove[0], AIMove[1]);
 		}
+		System.out.println(board);
+		System.out.println("AI won! Come on dude.");
+		System.exit(0);
 	}
 
 }
