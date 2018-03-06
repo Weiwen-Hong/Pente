@@ -93,7 +93,6 @@ public class Board{
 
 		for (int i = row1Start; i <= row1End; i++) {
 			for (int j = col1Start; j <= col1End; j++) {
-			  System.out.println(i + "   " + j);
 				if (board[i][j] == -1) {
 					int[] coords = new int[] {i, j, 0};
 					available.add(coords);
@@ -382,7 +381,8 @@ public class Board{
 
   private int[] toInBound(int row, int col) {
 	  row = (row >= 0 ? row : 0);
-	  row = (row < dim ? dim : dim - 1);
+	  row = (row < dim ? row : dim - 1);
+
 	  col = (col >= 0 ? col : 0);
 	  col = (col < dim ? col : dim - 1);
 
