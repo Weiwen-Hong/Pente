@@ -13,9 +13,9 @@ import java.util.*;
 public class Pente {
 	public static void main(String[] args) {
 
-		Board board = new Board(8, 4);
+		Board board = new Board(10, 5);
 
-		// twoPlayersMode(board);
+		//twoPlayersMode(board);
 		playerAIMode(board);
 
 	}
@@ -85,7 +85,7 @@ public class Pente {
 			board.move(1, AIMove[0], AIMove[1]);
 		}
 		System.out.println(board);
-		System.out.println("AI won! Come on dude.");
+		System.out.println("AI won!");
 		System.exit(0);
 	}
 

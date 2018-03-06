@@ -9,9 +9,10 @@ public class Board{
 	private static final int[][] directions = new int[][] {{1,0},{1,1},{0,1},
 		{-1,1}};
 	private static Random random = new Random();
-	private static final int MCNum = 10000;
+	private static final int MCNum = 800;
 	private static final int maxSpecialOperationElement = 15;
 	private static final int availableSpotDist = 1;
+	private static ArrayList<int[]> worklist;
 
 	public Board(int dimension, int toWin){
     this.dim = dimension;
@@ -19,7 +20,7 @@ public class Board{
     board = new int[dim][dim];
     lastMove = new int[2];
     stLastMove = new int[2];
-    stLastMove[0] = stLastMove[1] = lastMove[0] = lastMove[1] = 4;
+    stLastMove[0] = stLastMove[1] = lastMove[0] = lastMove[1] = -1;
 
     System.out.println("Initialized");
     for (int i = 0; i < dim; i++) {
@@ -56,17 +57,21 @@ public class Board{
 		}
 
 		if (board[row][col] != -1) {
-			System.err.println("Coords is not an empty spot");
+			//System.err.println("Coords is not an empty spot");
 			return false;
 		}
 
 		stLastMove[0] = lastMove[0];
-		stLastMove[1] = stLastMove[1];
+		stLastMove[1] = lastMove[1];
 
     board[row][col] = player;
 
     lastMove[0] = row;
     lastMove[1] = col;
+    if (stLastMove[0] == -1) {
+    	stLastMove[0] = lastMove[0];
+			stLastMove[1] = lastMove[1];
+		}
 		return true;
 	}
 
@@ -76,8 +81,8 @@ public class Board{
 	 * Used for the AI player, the arguments are the player's last move and
 	 * the opponent's last move
  	 */
-	public ArrayList<int[]> getAvailableSpots(int row1, int col1, int row2, int
-    col2) {
+	public ArrayList<int[]> getAvailableSpots(int row2, int col2, int row1, int
+    col1) {
 	  HashSet<int[]> available = new HashSet<>();
 
 		// calculate and get available spot around first coordinates
@@ -101,10 +106,10 @@ public class Board{
 		}
 
     // calculate and get available spot around first coordinates
-		int row2Start = (row2 >= 1) ? row2 - 1 : 0;
-		int row2End = (row2 + 1 < dim) ? row2 + 1 : dim - 1;
-		int col2Start = (col2 >= 1) ? col2 - 1 : 0;
-		int col2End = (col2 + 1 < dim) ? col2 + 1 : dim - 1;
+		int row2Start = (row2 >= 2) ? row2 - 2 : 0;
+		int row2End = (row2 + 2 < dim) ? row2 + 2 : dim - 1;
+		int col2Start = (col2 >= 2) ? col2 - 2 : 0;
+		int col2End = (col2 + 2 < dim) ? col2 + 2 : dim - 1;
 		for (int i = row2Start; i <= row2End; i++) {
 			for (int j = col2Start; j <= col2End; j++) {
 				if (board[i][j] == -1) {
@@ -117,31 +122,6 @@ public class Board{
 		return new ArrayList<int[]>(available);
 	}
 
-
-
-	public void printBoard() {
-		System.out.println("============================");
-		System.out.print("   ");
-		for (int i = 0; i < dim; i++) {
-			System.out.print(i + "  ");
-		}
-		System.out.println();
-		for (int i = 0; i < dim; i++) {
-			System.out.print(i + " ");
-			for (int j = 0; j < dim; j++) {
-				if (board[i][j] == 0) {
-					System.out.print(" O ");
-				} else if (board[i][j] == 1) {
-					System.out.print(" X ");
-				} else {
-					System.out.print("   ");
-				}
-			}
-			System.out.println();
-		}
-		System.out.println();
-		System.out.println("============================");
-	}
 
 
 
@@ -189,8 +169,24 @@ public class Board{
 		}
 
 	  // get moves around AI and human
-		ArrayList<int[]> worklist = this.getAvailableSpots(lastAIMove[0],
-      lastAIMove[1], lastHumanMove[0], lastHumanMove[1]);
+		worklist = this.getAvailableSpots(lastHumanMove[0],
+						lastHumanMove[1], lastAIMove[0], lastAIMove[1]);
+
+	  // add necessary defense to the list
+		int[] defense = directWin(0);
+		if (defense != null) {
+			return defense;
+		}
+
+		int[] win = directWin(1);
+		if (win != null) {
+			return win;
+		}
+
+		int[] almostDirectWin = almostDirectWin(1);
+		if (almostDirectWin != null) {
+			return almostDirectWin;
+		}
 
 		int bestMoveIndex = 0;
 
@@ -203,11 +199,7 @@ public class Board{
 			int winTime = 0;
 
 			for (int i = 0; i <= MCNum; i++) {
-				int[] win = directWin(1);
-			  if (win != null) {
-			  	return win;
-				}
-				winTime += tryMove(this, lastAIMove, lastHumanMove, newMove, 1);
+				winTime += tryMove(new Board(this), lastAIMove, lastHumanMove, newMove, 1, 1);
 			}
 
 			worklist.get(possibleMove)[2] = winTime;
@@ -228,21 +220,46 @@ public class Board{
 
 
 	// see the result of a move without actually making a move on the actual board
-	private int tryMove(Board origin, int[] secondToLastMove, int[] lastMove,
-											int[] thisMove, int player) {
-	  // copy the board
-		Board newBoard = new Board(origin);
+	private int tryMove(Board newBoard, int[] secondToLastMove, int[] lastMove,
+											int[] thisMove, int player, int loopDepth) {
 		// make the move
 		newBoard.move(player, thisMove[0], thisMove[1]);
 
-		// check if absolute Win
+		// check if absolute Win, add weight corresponding to depth
 		int[] directWin = directWin(player);
 		if (directWin != null) {
-		  newBoard.move(1- player, directWin[0], directWin[1]);
+			if (player == 1) {
+				if (loopDepth < 5) {
+					// ai will win
+					return 1 * (6 - loopDepth);
+				} else {
+					return 1;
+				}
+			} else if (loopDepth < 6) {
+				/*if (loopDepth < 3) {
+					worklist.add(directWin);
+				}*/
+				return -1 * (7 - loopDepth);
+			} else {
+				return -1;
+			}
 		}
+
 		directWin = directWin(1 - player);
 		if (directWin != null) {
-			newBoard.move(1 - player, directWin[0], directWin[1]);
+			if (player == 1) {
+				if (loopDepth < 6) {
+					// human will win
+					return -1 * (7 - loopDepth);
+				} else {
+					return -1;
+				}
+			} else if (loopDepth < 5) {
+				// ai will win
+				return 1 * (6 - loopDepth);
+			} else {
+				return 1;
+			}
 		}
 
 
@@ -253,7 +270,8 @@ public class Board{
 		} else {
 		  // get around coords
 			ArrayList<int[]> worklist = newBoard.getAvailableSpots
-							(secondToLastMove[0], secondToLastMove[1], lastMove[0], lastMove[1]);
+							(lastMove[0], lastMove[1],
+											secondToLastMove[0], secondToLastMove[1]);
 
 			if (worklist.size() == 0) {
 			  worklist = newBoard.specialOperatoin(thisMove[0], thisMove[1]);
@@ -268,7 +286,7 @@ public class Board{
 
 			int[] newMove = new int[] {(Integer)worklist.get(choice)[0],
 							(Integer)worklist.get(choice)[1]};
-			return tryMove(newBoard, lastMove, thisMove, newMove, 1 - player);
+			return tryMove(newBoard, lastMove, thisMove, newMove, 1 - player, loopDepth + 1);
 		}
 	}
 
@@ -453,6 +471,50 @@ public class Board{
 	}
 
 
+	private int[] almostDirectWin(int player) {
+		ArrayList<int[]> allPlayerCoord = getAllPLayerCoord(1 - player);
+		HashSet<int[]> allAvailableMove = new HashSet<>();
+
+		for (int[] coord : allPlayerCoord) {
+			ArrayList<int[]> temp = getCoordNextTo(coord[0], coord[1]);
+			allAvailableMove.addAll(temp);
+		}
+
+		ArrayList<int[]> allMoves = new ArrayList<>(allAvailableMove);
+
+
+		Board testBoard;
+		int[] thisGame = null;
+
+		for (int[] thisCoord : allMoves) {
+			// find the coord that if the ai fails to occupy, will result in a absolute loss
+			testBoard = new Board(this);
+
+			testBoard.move(1 - player, thisCoord[0], thisCoord[1]);
+			ArrayList<int[]> allMovesOriginal = testBoard.getAllPLayerCoord(1 - player);
+			HashSet<int[]> allMoves2 = new HashSet<>(allMovesOriginal);
+
+			boolean defenseUseless = true;
+
+			for (int[] defenseCoord : allMoves2) {
+				// a good thisCoord should have defenseUseless true throughout the for loop
+				testBoard.move(player, defenseCoord[0], defenseCoord[1]);
+				thisGame = testBoard.directWin(1 - player);
+				if (thisGame == null) {
+					defenseUseless = false;
+				}
+				if (thisGame != null) {
+					//defenseUseless = false;
+				}
+			}
+
+			if (defenseUseless) {
+				return thisCoord;
+			}
+		}
+		return null;
+	}
+
 
 	private int[] directWin(int player) {
 	  ArrayList<int[]> allPlayerCoord = getAllPLayerCoord(player);
@@ -460,10 +522,7 @@ public class Board{
 
 	  for (int[] coord : allPlayerCoord) {
 	  	ArrayList<int[]> temp = getCoordNextTo(coord[0], coord[1]);
-
-	  	for (int[] thisCoord : temp) {
-	  		allAvailableMove.add(thisCoord);
-			}
+			allAvailableMove.addAll(temp);
 		}
 
 		ArrayList<int[]> allMoves = new ArrayList<>(allAvailableMove);
