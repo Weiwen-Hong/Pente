@@ -15,7 +15,7 @@ public class Pente {
 
 		Board board = new Board(8, 4);
 
-		//twoPlayersMode(board);
+		// twoPlayersMode(board);
 		playerAIMode(board);
 
 	}
